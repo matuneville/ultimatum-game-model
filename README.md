@@ -1,0 +1,1 @@
+# ultimatum-game-model

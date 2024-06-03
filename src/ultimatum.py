@@ -23,6 +23,7 @@ class Ultimatum:
         """
         """
         self.n = n
+        self.lista_aristas = lista_aristas
         self.agentes = self.setup(lista_aristas, n)
 
 
@@ -38,8 +39,13 @@ class Ultimatum:
         return agentes
 
     def turno(self):
-        propone = random.choice(self.agentes)
-        vecino = random.choice(propone.vecinos)
+        (vecino_id, propone_id) = random.choice(self.lista_aristas)
+        propone = self.agentes[propone_id]
+        vecino = self.agentes[vecino_id]
+
+
+        # propone = random.choice(self.agentes)
+        # vecino = random.choice(propone.vecinos)
         propone.proponer(vecino)
     
     def calculate_fitness(self):

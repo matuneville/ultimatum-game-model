@@ -38,11 +38,10 @@ class Ultimatum:
 
         return agentes
 
-    def turno(self):
+    def turno(self): 
         (vecino_id, propone_id) = random.choice(self.lista_aristas)
         propone = self.agentes[propone_id]
         vecino = self.agentes[vecino_id]
-
 
         # propone = random.choice(self.agentes)
         # vecino = random.choice(propone.vecinos)

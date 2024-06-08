@@ -10,22 +10,34 @@ Necesitamos:
 - Al final, calcular qué tan bien le fue a alguien (promedio de las nne) [x]
 """
 
-def estrategia_proponer_dummy(agente, vecino):
-    return random.randint(1,9)
+"""
+Estrategia proponer:
 
-def estrategia_aceptar_dummy(agente, vecino, valor):
-    return random.choice([True, False])
+Input: un agente y un vecino
+
+Cada agente puede acceder al historial de encuentros con su vecino
+Cada gente puede acceder a su cantidad de vecinos
+Cada agente puede acceder a su historial con otros vecinos?
+
+Output es un número entre uno y nueve
+
+Estrategia aceptar es igual pero el output es True o False
+
+"""
+
 
 class Agente:
     def __init__(self, id, estrategia_proponer, estrategia_aceptar, vecinos): 
-        # Pondría una estrategia para proponer y otra para aceptar, porque son dos decisiones distintas
-        # Una estrategia es una función que toma información de entrada y me dice cuánto proponer, o si rechazar o no (según qué decisión esté tomando)
-
-        # Si vamos a usar historiales de encuentros, deberíamos tener un historial distinto por cada vecino
         """
         ## Parametros:
-            estrategia: funcion que define que decisión tomar a partir de cierta información
+            id: número asignado al agente
+            estrategias: funcion que define que decisión tomar a partir de cierta información
             vecinos: lista de vecinos
+
+        Pondría una estrategia para proponer y otra para aceptar, porque son dos decisiones distintas
+        Una estrategia es una función que toma información de entrada y me dice cuánto proponer, o si rechazar o no (según qué decisión esté tomando)
+
+        Si vamos a usar historiales de encuentros, deberíamos tener un historial distinto por cada vecino
         """
         self.id = id
         self.estrategia_proponer = estrategia_proponer

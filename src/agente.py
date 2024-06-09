@@ -32,12 +32,7 @@ class Agente:
         ## Parametros:
             id: número asignado al agente
             estrategias: funcion que define que decisión tomar a partir de cierta información
-            vecinos: lista de vecinos
-
-        Pondría una estrategia para proponer y otra para aceptar, porque son dos decisiones distintas
-        Una estrategia es una función que toma información de entrada y me dice cuánto proponer, o si rechazar o no (según qué decisión esté tomando)
-
-        Si vamos a usar historiales de encuentros, deberíamos tener un historial distinto por cada vecino
+            vecinos: lista de agentes vecinos
         """
         self.id = id
         self.estrategia_proponer = estrategia_proponer
@@ -48,6 +43,14 @@ class Agente:
 
         self.dinero_ganado = 0
         self.cantidad_negociaciones = 0
+
+        self.hist_propuesto = {vecino.id: [] for vecino in vecinos}
+        self.hist_recibido  = {vecino.id: [] for vecino in vecinos}
+
+        """
+        historial: diccionario de key: Agente vecino,
+            value: lista de tupla (dinero propuesto/ofrecido, aceptado)
+        """
 
     def __str__(self):
         return (f"Dinero Ganado: {self.dinero_ganado}\n"
@@ -60,22 +63,20 @@ class Agente:
         
         if vecino_acepta:
             self.dinero_ganado += 10 - valor_ofrecido
-            # sumar al historial
         else:
-            x=0
-            # sumar al historial 
+            x=0 
         self.cantidad_negociaciones += 1
+        self.hist_propuesto[vecino.id].append((valor_ofrecido, vecino_acepta))
 
 
     def evaluar_oferta(self, vecino, valor):
         aceptar = self.estrategia_aceptar(self, vecino, valor)
         if aceptar :
             self.dinero_ganado += valor
-            # sumar al historial
         else:
-            x=0
-            # sumar al historial 
+            x=0 
         self.cantidad_negociaciones += 1
+        self.hist_recibido[vecino.id].append((valor, aceptar))
         return aceptar
 
 

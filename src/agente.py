@@ -1,4 +1,5 @@
 import random
+from collections import defaultdict
 
 """
 Necesitamos:
@@ -44,8 +45,8 @@ class Agente:
         self.dinero_ganado = 0
         self.cantidad_negociaciones = 0
 
-        self.hist_propuesto = {vecino.id: [] for vecino in vecinos}
-        self.hist_recibido  = {vecino.id: [] for vecino in vecinos}
+        self.hist_propuesto = defaultdict(list)
+        self.hist_recibido  = defaultdict(list)
 
         """
         historial: diccionario de key: Agente vecino,

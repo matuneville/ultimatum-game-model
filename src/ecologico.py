@@ -12,26 +12,21 @@ class Ecologico:
         self.lista_agentes_con_estrategia = {}
 
         """
-        estrategias es un dict que contiene:
-            -
+        estrategias es un dict de key: nombre de la estrategia, y value:
             - la estrategia ofrecer
             - la estrategia aceptar
             - cuántos agentes la tienen
-            - 
         """
 
     def setup_generacion(self, estrategias):
         ultimatum = Ultimatum(self.topologia, self.n_agentes)
 
-
         agentes = ultimatum.agentes.copy()
         agentes = np.random.permutation(agentes)
-        
-        # for i in range(5):
-        #    print(ultimatum.agentes[i].id)
-        #    print(agentes[i].id)
 
         start = 0
+        # Agarra el dict de estrategias, que contiene cuantos agentes adoptan cada estrategia, 
+        # y reparte las estrategias al azar entre los agentes
         for key, (estrategia_ofrecer, estrategia_aceptar, cantidad_agentes) in estrategias.items(): 
             end = int(start + cantidad_agentes) # start - end = cantidad de agentes siempre
 
@@ -42,15 +37,17 @@ class Ecologico:
                 agente.estrategia_aceptar = estrategia_aceptar
             start = end
 
+            # Lista_agentes_con_estrategia es un dict va a rastrear qué agentes tienen cada estrategia
+            # La clave es el nombre de la estrategia, y el valor es un array de agentes.
             self.lista_agentes_con_estrategia[key] = agentes_con_estrategia
         
         # self.lista_agentes_con_estrategia = lista_agentes_con_estrategia
         return ultimatum
     
     def generacion(self, estrategias): 
-        # toma una lista de estrategias, devuelve el porcentaje del fitness total por estrategia
-        # estrategias tiene diccionario
-        # nombre_de_estrategias -> estrategia_proponer, estrategia_aceptar, q_agentes
+        """
+        Toma una lista de estrategias y devuelve el porcentaje del fitness total por estrategia luego de generar n turnos en el modelo.
+        """
 
         ultimatum = self.setup_generacion(estrategias)
 
@@ -61,20 +58,27 @@ class Ecologico:
         # Calculate new population
         ultimatum.calculate_fitness()
 
+        # Acá ya tenemos el fitness de cada agente.
+        # Para calcular el fitness de la estrategia A, lo que hacemos es:
+        # Sumar el fitness de todos los agentes con estrategia A
+        # Dividirlo por el total de puntos sumados por TODOS los agentes que jugaron
+        # Este valor lo vamos a usar para actualizar las poblaciones. 
+        # El valor que calculamos será la cantidad de agentes que use la estrategia A en la próxima generación.
+        # Esto está tomado de Robert Axelrod.
+
+        # Fitness agregado de todos los agentes del juego
         fitness_total = 0
+
+        # Nuevo diccionario, que va a tener el nombre de la estrategia y el fitness de la estrategia
         fitness_por_estrategia = {}
 
-        for key, value in self.lista_agentes_con_estrategia.items():
+        for nombre_estrategia, value in self.lista_agentes_con_estrategia.items():
             fitness_estrategia = 0
             for agente in value:
-                fitness_estrategia += agente.media_negociaciones #
-                # print(agente.id)
-                # print(fitness_estrategia)
-            # cantidad_agentes_con_estrategia = len(value)
-            # fitness_estrategia = fitness_estrategia / cantidad_agentes_con_estrategia # Para evaluar qué tan bien le fue a la estrategia, vemos qué tan bien le fue en promedio.
+                fitness_estrategia += agente.media_negociaciones
             
             fitness_total += fitness_estrategia
-            fitness_por_estrategia[key] = fitness_estrategia
+            fitness_por_estrategia[nombre_estrategia] = fitness_estrategia
         
         porcentaje_fitness_total_por_estrategia = {}
 
@@ -85,7 +89,10 @@ class Ecologico:
 
 
     def reasignar_estrategias(self, estrategias, porcentaje_fitness_total_por_estrategia):
-
+        """
+        Actualizo self.estrategias en base al resultado de la funcion self.generacion.
+        Conceptualmente, actualizo las poblaciones según qué tan bien le fue a cada estrategia.
+        """
         nuevas_estrategias = {} # nombre_estrategia -> estrategia_proponer, estrategia_aceptar, cantidad_agentes
 
         cantidad_agentes = 0
@@ -99,26 +106,20 @@ class Ecologico:
 
         diferencia = cantidad_agentes - self.n_agentes
 
-
+        # Aca sorteo estrategias en los agentes restantes sin estrategias asignadas (por problemas de redondeo)
         while(diferencia > 0):
-            
             clave = random.choice(nombres_estrategias)
             if(nuevas_estrategias[clave][2] > 0):
                 estrategia_list = list(nuevas_estrategias[clave])
-                # Modify the element
                 estrategia_list[2] += 1
-                # Convert the list back to a tuple
                 nuevas_estrategias[clave] = tuple(estrategia_list)                
                 diferencia -= 1
-            
 
         while(diferencia < 0):
             clave = random.choice(nombres_estrategias)
             if(nuevas_estrategias[clave][2] < 100):
                 estrategia_list = list(nuevas_estrategias[clave])
-                # Modify the element
                 estrategia_list[2] += 1
-                # Convert the list back to a tuple
                 nuevas_estrategias[clave] = tuple(estrategia_list)
                 diferencia += 1
             

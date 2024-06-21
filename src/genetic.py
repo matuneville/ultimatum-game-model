@@ -123,10 +123,7 @@ class Genetico:
 
         # Update the original arrays if needed
         genomas = sorted_genomas
-        # print(f"El fitness del primero es {sorted_fitness[0]}")
-        # print(f"El fitness del treinta es {sorted_fitness[29]}")
-        # print(f"El fitness del sesenta es {sorted_fitness[59]}")
-        
+
         # Quedarse con el porcentaje de fitness mayor
         n_sobrevivientes = mutaciones['n_sobrevivientes']
         sobrevivientes = genomas[:n_sobrevivientes]

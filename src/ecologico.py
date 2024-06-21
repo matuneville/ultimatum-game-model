@@ -127,16 +127,16 @@ class Ecologico:
 
     def print_poblaciones(self, estrategias):
         for key, value in estrategias.items():
-            print(f"Cantidad de estrategias {key}: {estrategias[key][2]}")
+            print(f"#Agentes con {key}: {estrategias[key][2]}")
+        print("\n")
 
-    def competir(self, estrategias_iniciales):
-        estrategias_asignadas = estrategias_iniciales
-
-        self.print_poblaciones(estrategias_asignadas)
+    def competir(self):
+        estrategias = self.estrategias
+        historial_estrategias = [estrategias]
 
         for i in range(self.n_generaciones):
-            resultados = self.generacion(estrategias_asignadas) # En principio esto lo podríamos hacer más de una vez para tener un número más robusto pero bueno, la idea de esto es evitar oscilaciones
-            estrategias_asignadas = self.reasignar_estrategias(estrategias_asignadas, resultados)
-            self.print_poblaciones(estrategias_asignadas)
+            resultados = self.generacion(estrategias)
+            estrategias = self.reasignar_estrategias(estrategias, resultados)
+            historial_estrategias.append(estrategias)
         
-        return estrategias_asignadas
+        return historial_estrategias

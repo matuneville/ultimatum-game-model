@@ -9,6 +9,9 @@ def estrat_aceptar_rand(agente, vecino, valor):
 def estrat_aceptar_nunca(agente, vecino, valor):
     return 0
 
+def estrat_aceptar_siempre(agente, vecino, valor):
+    return 1
+
 def estrat_proponer_promedio(agente, vecino):
     suma_aceptadas = 0
     aceptadas = 0

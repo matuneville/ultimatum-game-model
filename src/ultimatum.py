@@ -11,12 +11,6 @@ Necesitamos:
 - Al final, calcular qué tan bien le fue a alguien (promedio de las nne)
 """
 
-def estrategia_proponer_dummy(agente, vecino):
-    return random.randint(1,9)
-
-def estrategia_aceptar_dummy(agente, vecino, valor):
-    return random.choice([True, False])
-
 class Ultimatum:
 
     def __init__(self, lista_aristas, n):
@@ -52,4 +46,21 @@ class Ultimatum:
             if(agente.cantidad_negociaciones > 0):
                 agente.media_negociaciones = round(agente.dinero_ganado / agente.cantidad_negociaciones, 2)
 
+
+def create_random_adjacency_list(n, k):
+    edges = set()
     
+    while len(edges) < k:
+        u = random.randint(0, n-1)
+        v = random.randint(0, n-1)
+        if u != v:
+            edge = tuple(sorted((u, v)))  # Sort the tuple to avoid (u, v) and (v, u) as different
+            edges.add(edge)
+    
+    return list(edges)
+    
+def estrategia_proponer_dummy(agente, vecino):
+    return random.randint(1,9)
+
+def estrategia_aceptar_dummy(agente, vecino, valor):
+    return random.choice([True, False])

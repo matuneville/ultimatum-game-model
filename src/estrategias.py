@@ -4,7 +4,7 @@ def estrat_proponer_rand(agente, vecino):
     return random.randint(1,9)
 
 def estrat_aceptar_rand(agente, vecino, valor):
-    return random.choice([True, False])
+    return valor >= random.randint(1,9)
 
 def estrat_aceptar_nunca(agente, vecino, valor):
     return 0
@@ -45,11 +45,11 @@ def estrat_aceptar_promedio(agente, vecino, valor):
     promedio = suma_aceptadas / aceptadas
     return valor >= promedio
 
-def estrat_rata(agente, vecino):
+def estrat_proponer_rata(agente, vecino):
     return 1
 
-def estrat_antirrata_proponer(agente, vecino):
+def estrat_proponer_antirrata(agente, vecino):
     return 5
 
-def estrat_antirrata_aceptar(agente,vecino,valor):
+def estrat_aceptar_antirrata(agente,vecino,valor):
     return valor >= 3

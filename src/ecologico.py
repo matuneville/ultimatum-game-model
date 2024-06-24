@@ -3,13 +3,15 @@ import numpy as np
 import random
 
 class Ecologico:
-    def __init__(self, n_turnos_por_generacion, n_generaciones, estrategias, n_agentes, topologia):
+    def __init__(self, n_turnos_por_generacion, n_generaciones, estrategias, n_agentes, n_aristas, topologia):
         self.n_turnos_por_generacion = n_turnos_por_generacion
         self.n_generaciones = n_generaciones
         self.estrategias = estrategias
         self.n_agentes = n_agentes
+        self.n_aristas = n_aristas
         self.topologia = topologia
         self.lista_agentes_con_estrategia = {}
+        self.ultimatum = None # ultimatum actual (el de la ultima generacion)
 
         """
         estrategias es un dict de key: nombre de la estrategia, y value:
@@ -48,9 +50,9 @@ class Ecologico:
         """
         Toma una lista de estrategias y devuelve el porcentaje del fitness total por estrategia luego de generar n turnos en el modelo.
         """
-
+        
         ultimatum = self.setup_generacion(estrategias)
-
+        self.ultimatum = ultimatum
         # Evolve
         for i in range(self.n_turnos_por_generacion):
             ultimatum.turno()
@@ -83,8 +85,8 @@ class Ecologico:
         porcentaje_fitness_total_por_estrategia = {}
 
         for key,value in fitness_por_estrategia.items():
-            porcentaje_fitness_total_por_estrategia[key] = value/fitness_total
-        
+            porcentaje_fitness_total_por_estrategia[key] = value/fitness_total 
+
         return porcentaje_fitness_total_por_estrategia
 
 
@@ -133,10 +135,17 @@ class Ecologico:
     def competir(self):
         estrategias = self.estrategias
         historial_estrategias = [estrategias]
+        vecinos = []
+        fitness = []
 
         for i in range(self.n_generaciones):
             resultados = self.generacion(estrategias)
             estrategias = self.reasignar_estrategias(estrategias, resultados)
             historial_estrategias.append(estrategias)
+
+            if i==5:
+                for agente in self.ultimatum.agentes:
+                    vecinos.append(len(agente.vecinos))
+                    fitness.append(agente.media_negociaciones)
         
-        return historial_estrategias
+        return historial_estrategias, (vecinos,fitness)

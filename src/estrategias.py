@@ -53,3 +53,9 @@ def estrat_proponer_antirrata(agente, vecino):
 
 def estrat_aceptar_antirrata(agente,vecino,valor):
     return valor >= 3
+
+def estrat_proponer_antirrata_2(agente,vecino):
+    for (n, aceptado) in agente.hist_recibido[vecino]:
+        if n < 3:
+            return 1
+    return 3

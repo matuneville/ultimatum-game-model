@@ -148,8 +148,11 @@ class Genome:
             if(node['type'] == 2): # Esto asume que van a seguir en orden
                 last_layer_activations.append(node['activation'])
         
-        
+        return last_layer_activations[0]
+
+        """
         probabilities = softmax(last_layer_activations)
+        """
         # para sensores, no aplicar no linealidad
         # aplicar softmax a outputs
         # seguir orden topológico (se puede ahorrar tiempo sacando sensores y outputs en ese orden)
@@ -345,7 +348,7 @@ class Genome:
         matching_genes = 0
         weight_difference_sum = 0
         
-        genome_size = len(self.connections) + len(other.connections)
+        genome_size = max(len(self.connections), len(other.connections))
 
         i = 0
         j = 0

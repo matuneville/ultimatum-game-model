@@ -1,7 +1,9 @@
 from genome import Genome, World
+from ecologico import Ecologico
 from ultimatum import Ultimatum
 import numpy as np
 import random
+import math
 
 def apply_neural_network_propose(agente, vecino, genome):
     input = []
@@ -64,18 +66,24 @@ def strategy_accept(genome):
     strategy = lambda agente, vecino, valor : apply_neural_network_accept(agente, vecino, valor, genome)
     return strategy
 
-class Genetico:
-    def __init__(self, n_turnos_por_generacion, n_generaciones, genomas, n_agentes, topologia, mutaciones):
+class Genetico_counter:
+    def __init__(self, n_turnos_por_generacion, n_generaciones, genomas, mutaciones, n_agentes, target, bool_ecosystem, n_generaciones_ecologico=50, n_agentes_ecologico = 100, topologia=[], stop_when_extint=[]):
         self.n_turnos_por_generacion = n_turnos_por_generacion
         self.n_generaciones = n_generaciones
         self.genomas = genomas
         self.fitness_genomas = []
-        self.n_agentes = n_agentes
-        self.topologia = topologia
         self.mutaciones = mutaciones
         self.species_member_count = [n_agentes]
+        self.mejor_fitness = 0
+        self.target = target
+        self.bool_ecosystem = bool_ecosystem
 
+        self.n_generaciones_ecologico = n_generaciones_ecologico 
+        self.n_agentes_ecologico = n_agentes_ecologico
+        self.topologia = topologia
+        self.stop_when_extint = stop_when_extint
         """
+
         GENOMAS
         Los genomas son un array que contiene los genomas de cada agente según su id.
         Cada elemento es una tupla (genoma_proponer, genoma_aceptar)
@@ -100,20 +108,65 @@ class Genetico:
         }
         
         """
+    def generacion_single_strategy(self, genomas):
+        # toma una lista de genomas
+        # devuelve el fitness calculado de cada genoma
 
+        self.fitness_genomas = []
 
-    def setup_generacion(self, genomas):
-        ultimatum = Ultimatum(self.topologia, self.n_agentes)
+        for genoma in genomas:
+            ultimatum = Ultimatum([(0, 1)], 2)
+            
+            ultimatum.agentes[0].estrategia_proponer = strategy_propose(genoma[0])
+            ultimatum.agentes[0].estrategia_aceptar = strategy_accept(genoma[1])
 
-        agentes = ultimatum.agentes
+            ultimatum.agentes[1].estrategia_proponer = self.target[0]
+            ultimatum.agentes[1].estrategia_aceptar = self.target[1]
+            
+            # self.setup_generacion(genomas)
 
-        # Asignar al agente i el genoma i.
-        for i in range(len(agentes)):
-            agentes[i].estrategia_proponer = strategy_propose(genomas[i][0])
-            agentes[i].estrategia_aceptar = strategy_accept(genomas[i][1])
+            for i in range(self.n_turnos_por_generacion):
+                ultimatum.turno()
 
-        return ultimatum
+            ultimatum.calculate_fitness()
+
+            self.fitness_genomas.append(ultimatum.agentes[0].media_negociaciones)
+
+        if self.mutaciones['speciation']:
+            self.update_fitness_by_species(self.genomas, self.fitness_genomas)
+
+        # print(self.fitness_genomas)
+        return self.fitness_genomas
     
+    def generacion_ecosystem(self, genomas):
+
+        self.fitness_genomas = []
+
+        agentes_totales = 0
+        for key, value in self.target.items():
+            agentes_totales += value[2]
+        
+        agentes_extra = self.n_agentes_ecologico - agentes_totales
+        
+
+        for genoma in genomas:
+            estrategias = self.target
+            estrategias["genetica"] = (strategy_propose(genoma[0]), strategy_accept(genoma[1]), agentes_extra)
+
+            ecologico = Ecologico(self.n_turnos_por_generacion, self.n_generaciones_ecologico, estrategias, self.n_agentes_ecologico, self.topologia, ["genetica"])
+            ecologico.competir()
+
+            trayectoria_fitness = ecologico.fitness_estrategias_por_generacion['genetica']
+            
+            fitness_promedio = np.mean(trayectoria_fitness)
+            self.fitness_genomas.append(fitness_promedio*math.log(len(trayectoria_fitness)))
+            # print(f"Salió un genoma con fitness {fitness_promedio}")
+        
+        if self.mutaciones['speciation']:
+            self.update_fitness_by_species(self.genomas, self.fitness_genomas)
+
+        return self.fitness_genomas
+
 
     def assign_species(self, genomes):
         c1 = self.mutaciones['c1_distance']
@@ -166,25 +219,6 @@ class Genetico:
 
         return updated_fitnesses
 
-    def generacion(self, genomas):
-        # toma una lista de genomas
-        # devuelve el fitness calculado de cada genoma
-
-        ultimatum = self.setup_generacion(genomas)
-
-        for i in range(self.n_turnos_por_generacion):
-            ultimatum.turno()
-
-        ultimatum.calculate_fitness()
-
-        self.fitness_genomas = []
-
-        for i in range(len(genomas)):
-            # Por ahora, vamos sin especiación.
-            self.fitness_genomas.append(ultimatum.agentes[i].media_negociaciones)
-            # Cuando calcule el genetic distance, uso la suma de ambos, no? Sí, total es una combinación lineal de distancias.
-        if self.mutaciones['speciation']:
-            self.update_fitness_by_species(self.genomas, self.fitness_genomas)
 
     def reproduccion(self, mutaciones):
         # Ordenar genomas por fitness
@@ -201,6 +235,7 @@ class Genetico:
         sorted_genomas = [genoma for genoma, fitness in sorted_combined]
         sorted_fitness = [fitness for genoma, fitness in sorted_combined]
 
+        self.mejor_fitness = sorted_fitness[0]
         # Update the original arrays if needed
         genomas = sorted_genomas
         # print(f"El fitness del primero es {sorted_fitness[0]}")
@@ -273,11 +308,20 @@ class Genetico:
         return # Devolver el fitness máximo?
     
     def competir(self):
+        mod = 10
+        if self.bool_ecosystem:
+            mod = 1
+
         for i in range(self.n_generaciones):
-            self.generacion(self.genomas)
+            if self.bool_ecosystem:
+               self.generacion_ecosystem(self.genomas) 
+            else: 
+                self.generacion_single_strategy(self.genomas)
             self.reproduccion(self.mutaciones)
-            if i % 10 == 0:
+
+            if i % mod == 0:
                 print(f"generación {i} concluida.")
+                print(f"Mejor fitness: {self.mejor_fitness}")
                 print(f"Poblaciones: {self.species_member_count}")
         
         return 

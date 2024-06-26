@@ -24,7 +24,7 @@ class Ultimatum:
     def setup(self, lista_aristas, n): 
         agentes = []
         for i in range(n):
-            agentes.append(Agente(i,estrategia_proponer_dummy, estrategia_aceptar_dummy, []))
+            agentes.append(Agente(i,1,1, [])) # le paso estrategias dummy
             
         for (id_1, id_2) in lista_aristas:
             agentes[id_2].vecinos.append(agentes[id_1])
@@ -58,13 +58,7 @@ def create_random_adjacency_list(n, k):
         u = random.randint(0, n-1)
         v = random.randint(0, n-1)
         if u != v:
-            edge = tuple(sorted((u, v)))  # Sort the tuple to avoid (u, v) and (v, u) as different
+            edge = tuple(sorted((u, v))) # ordenar tupla para evitar que (u, v) y (v, u) sean diferentes
             edges.add(edge)
     
     return list(edges)
-    
-def estrategia_proponer_dummy(agente, vecino):
-    return random.randint(1,9)
-
-def estrategia_aceptar_dummy(agente, vecino, valor):
-    return random.choice([True, False])

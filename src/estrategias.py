@@ -66,7 +66,10 @@ def estrat_proponer_t4t(agente, vecino):
     if n_encuentros == 0:
         return 5
     ultima_propuesta = historial[n_encuentros - 1][0]
-    return ultima_propuesta < 5
+    if ultima_propuesta < 5:
+        return 1
+    else:
+        return 5
 
 def estrat_aceptar_t4t(agente, vecino, valor):
     return valor >= 5

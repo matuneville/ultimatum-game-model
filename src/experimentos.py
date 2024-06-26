@@ -9,10 +9,6 @@ class Experimentos:
         self.n_generaciones = n_generaciones
         self.n_agentes = n_agentes
 
-    def set_global_parameters(turnos, generaciones, agentes):
-        n_turnos_por_generacion = turnos
-        n_generaciones = generaciones
-        n_agentes = agentes
 
     def contar_ganador_n_veces(self, n_simulaciones, topologia, estrategias):
         eco = Ecologico(self.n_turnos_por_generacion, self.n_generaciones, estrategias, self.n_agentes, topologia)
@@ -47,8 +43,8 @@ class Experimentos:
 
     # Evalúa para qué cantidad de agentes cambia la proporción en estrategias ganadoras
     # Las estrategias son tuplas de proponer y aceptar
-    def criticalidad_ganador_dos_estrategias(self, estrategia_1, estrategia_2, topologia, iteraciones, min_e1, max_e1, granularidad):
-
+    def criticalidad_ganador_dos_estrategias(self, estrategia_1, estrategia_2, topologia, 
+                                             simulaciones, min_e1, max_e1, granularidad):
         
         i = min_e1
 
@@ -56,55 +52,106 @@ class Experimentos:
         proporciones_ganadoras_e1 = []
 
         while i <= max_e1:
-
             estrategias = {
-                "estrategia_1" : (estrategia_1[0], estrategia_1[1], i),
-                "estrategia_2" : (estrategia_2[0], estrategia_2[1], self.n_agentes - i)
+                "estrategia_1": (estrategia_1[0], estrategia_1[1], i),
+                "estrategia_2": (estrategia_2[0], estrategia_2[1], self.n_agentes - i)
             }
 
             cantidades_iniciales_e1.append(i)
-            proporcion_ganadora_e1 = self.contar_ganador_n_veces(iteraciones, topologia, estrategias)["estrategia_1"]
-            proporciones_ganadoras_e1.append(proporcion_ganadora_e1)
+            proporcion_ganadora_e1 = self.contar_ganador_n_veces(simulaciones, topologia, estrategias)["estrategia_1"]
+            proporciones_ganadoras_e1.append(proporcion_ganadora_e1 / simulaciones * 100)
             
             print(f"Calculado para {i} agentes.")
-
             i += granularidad
-
 
         plt.figure(figsize=(10, 6))
         plt.plot(cantidades_iniciales_e1, proporciones_ganadoras_e1, marker='o', linestyle='-', color='b')
 
         plt.title('Proporción de Ganadores de Estrategia 1 vs Cantidades Iniciales de Estrategia 1')
         plt.xlabel('Cantidades Iniciales de Estrategia 1')
-        plt.ylabel('Proporciones Ganadoras de Estrategia 1')
+        plt.ylabel('Proporciones Ganadoras de Estrategia 1 (%)')
+        plt.ylim(0, 100)
         plt.grid(True)
         plt.show()
 
 
-    def graficar_evolucion_poblacional(self, estrategias, topologia):
+    def graficar_evolucion_poblacional(self, estrategias, topologia, añadir_media_poblacional=False):
         entorno = Ecologico(self.n_turnos_por_generacion, self.n_generaciones, estrategias, self.n_agentes, topologia)
         historial_estrategias, vecinos_fitness = entorno.competir()
         data = [{key: value[2] for key, value in dic.items()} for dic in historial_estrategias]
 
         df = pd.DataFrame(data)
 
+        if añadir_media_poblacional:
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
+        else:
+            fig, ax1 = plt.subplots(figsize=(8, 4))
 
-        plt.figure(figsize=(10, 4))
         end = None
+        
         for estrategia in df.columns:
-            plt.plot(df.index, df[estrategia], marker='.', label=estrategia)
+            ax1.plot(df.index, df[estrategia], marker='', label=estrategia)
             if end is None:  # Solo si aún no hemos encontrado un n_agentes
                 idx_n = df[estrategia][df[estrategia] == entorno.n_agentes].index
                 if not idx_n.empty:
                     end = idx_n[0]
                     
-        if end == None:
+        if end is None:
             end = entorno.n_generaciones
 
-        plt.xlim([0,end+1])
-        plt.xlabel('Generación')
-        plt.ylabel('Agentes por estrategia')
-        plt.title('Evolución de Ultimatum ecológico')
-        plt.legend()
+        ax1.set_xlim([0, end+1])
+        ax1.set_xlabel('Generación')
+        ax1.set_ylabel('Agentes por estrategia')
+        ax1.set_title('Evolución de Ultimatum ecológico')
+        ax1.legend()
+        ax1.grid(True)
+
+        if añadir_media_poblacional:
+            df_medias = pd.DataFrame({"Media_puntos": entorno.media_total_de_puntos_por_generacion})
+            ax2.plot(df_medias.index, df_medias['Media_puntos'], marker='', color='r')
+            ax2.set_ylabel('Media de puntos')
+            ax2.legend(['Media de puntos'])
+            ax2.grid(True)
+
+        plt.tight_layout()
+        plt.show()
+
+
+    def graficar_puntos_ganados_array_estrategias(self, array_estrategias, topologia):
+        # Para mostrar que igual es un óptimo global que haya 100 estrategias ratas
+        puntos_ganados = []
+        agentes_iniciales = []
+
+        for i in range(len(array_estrategias)):
+            entorno = Ecologico(self.n_turnos_por_generacion, 1, array_estrategias[i], self.n_agentes, topologia)
+            entorno.competir()
+            agentes = entorno.ultimatum.agentes
+            # print(agentes[0])
+            # print(agentes[0].dinero_ganado)
+            puntos_totales = 0
+            for j in range(len(agentes)):
+                puntos_totales += agentes[j].dinero_ganado
+            
+            agentes_iniciales.append(i)
+            puntos_ganados.append(puntos_totales)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(agentes_iniciales, puntos_ganados, marker='o', linestyle='-', color='b')
+
+        plt.title('Puntos ganados con más y menos agentes')
+        plt.xlabel('Agentes con la estrategia 2')
+        plt.ylabel('Puntos ganados en el ecosistema')
         plt.grid(True)
         plt.show()
+
+
+    def puntos_segun_presencia_de_dos_estrategias(self, estrategia_1, estrategia_2, topologia):
+        array_estrategias = []
+        for i in range(self.n_agentes + 1):
+            estrategias = {
+                "Estrategia 1" : (estrategia_1[0], estrategia_1[1], self.n_agentes - i),
+                "Estrategia 2" : (estrategia_2[0], estrategia_2[1], i)
+            }
+            array_estrategias.append(estrategias)
+
+        self.graficar_puntos_ganados_array_estrategias(array_estrategias, topologia)

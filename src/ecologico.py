@@ -86,7 +86,7 @@ class Ecologico:
             fitness_por_estrategia[nombre_estrategia] = fitness_estrategia
         
         porcentaje_fitness_total_por_estrategia = {}
-        self.media_total_de_puntos_por_generacion.append(fitness_total)
+        self.media_total_de_puntos_por_generacion.append(fitness_total/self.n_agentes)
 
         for key,value in fitness_por_estrategia.items():
             porcentaje_fitness_total_por_estrategia[key] = value/fitness_total

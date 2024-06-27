@@ -62,7 +62,7 @@ class Experimentos:
             proporcion_ganadora_e1 = self.contar_ganador_n_veces(simulaciones, topologia, estrategias)["estrategia_1"]
             proporciones_ganadoras_e1.append(proporcion_ganadora_e1 / simulaciones * 100)
             
-            print(f"Calculado para {i} agentes.")
+            # print(f"Calculado para {i} agentes.")
             i += granularidad
 
         plt.figure(figsize=(10, 6))

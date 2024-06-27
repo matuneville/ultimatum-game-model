@@ -2,6 +2,7 @@ from ecologico import Ecologico
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import statistics
 
 class Experimentos:
     def __init__(self, turnos, n_generaciones, n_agentes):
@@ -71,6 +72,74 @@ class Experimentos:
         plt.xlabel('Cantidades Iniciales de Estrategia 1')
         plt.ylabel('Proporciones Ganadoras de Estrategia 1 (%)')
         plt.ylim(0, 100)
+        plt.grid(True)
+        plt.show()
+
+    import statistics
+
+    def obtener_variables_macroscopicas(self, estrategias, topologia):
+        entorno = Ecologico(self.n_turnos_por_generacion, 1, estrategias, self.n_agentes, topologia)
+        entorno.competir()
+        ofertas = []
+        for agente in entorno.ultimatum.agentes:
+            for vecino_id, sus_ofertas in agente.hist_propuesto.items():
+                for oferta in sus_ofertas:
+                    ofertas.append(oferta)  # Append the offer to the list of offers
+        
+        # Extract the offered values
+        valores_ofrecidos = [oferta[0] for oferta in ofertas]
+        
+        # Calculate median and mean of offered values
+        mediana_ofrecida = statistics.median(valores_ofrecidos) if valores_ofrecidos else 0
+        media_ofrecida = statistics.mean(valores_ofrecidos) if valores_ofrecidos else 0
+        
+        # Get the offers less than 5
+        ofertas_menores_a_5 = [oferta for oferta in ofertas if oferta[0] < 5]
+        
+        # Get the percentage of offers less than 5 that were rejected
+        rechazos_menores_a_5 = [oferta for oferta in ofertas_menores_a_5 if not oferta[1]]
+        porcentaje_rechazos_menores_a_5 = (len(rechazos_menores_a_5) / len(ofertas_menores_a_5)) * 100 if ofertas_menores_a_5 else 0
+        
+        return mediana_ofrecida, media_ofrecida, porcentaje_rechazos_menores_a_5
+
+    def obtener_variables_macroscopicas_rango(self, estrategia1, estrategia2, topologia, cantidad_inicial_e1, cantidad_final_e1, granularidad):
+        medianas_ofrecidas = []
+        medias_ofrecidas = []
+        porcentajes_rechazos = []
+        porcentajes_agentes_e1 = []
+
+        i = cantidad_inicial_e1
+        while i <= cantidad_final_e1:
+            estrategias = {
+                "A": (estrategia1[0], estrategia1[1], i),
+                "B": (estrategia2[0], estrategia2[1], self.n_agentes - i)
+            }
+            mediana, media, porcentaje = self.obtener_variables_macroscopicas(estrategias, topologia)
+            medianas_ofrecidas.append(mediana)
+            medias_ofrecidas.append(media)
+            porcentajes_rechazos.append(porcentaje)
+            porcentajes_agentes_e1.append((i / self.n_agentes) * 100)  # Porcentaje de agentes con estrategia 1
+
+            i += granularidad
+
+        # Gráfico 1: Media y Mediana ofrecida
+        plt.figure(figsize=(10, 5))
+        plt.plot(porcentajes_agentes_e1, medias_ofrecidas, label='Media Ofrecida')
+        plt.plot(porcentajes_agentes_e1, medianas_ofrecidas, label='Mediana Ofrecida')
+        plt.xlabel('Porcentaje de Agentes con Estrategia 1')
+        plt.ylabel('Valor Ofrecido')
+        plt.title('Media y Mediana Ofrecida según Porcentaje de Agentes con Estrategia 1')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+        # Gráfico 2: Porcentaje de Rechazos de Ofertas Menores a 5
+        plt.figure(figsize=(10, 5))
+        plt.plot(porcentajes_agentes_e1, porcentajes_rechazos, label='Porcentaje de Rechazos (< 5)')
+        plt.xlabel('Porcentaje de Agentes con Estrategia 1')
+        plt.ylabel('Porcentaje de Rechazos')
+        plt.title('Porcentaje de Rechazos de Ofertas Menores a 5 según Porcentaje de Agentes con Estrategia 1')
+        plt.legend()
         plt.grid(True)
         plt.show()
 

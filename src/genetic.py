@@ -2,6 +2,7 @@ from genome import Genome, World
 from ultimatum import Ultimatum
 import numpy as np
 import random
+import sys
 
 def apply_neural_network_propose(agente, vecino, genome):
     input = []
@@ -273,14 +274,30 @@ class Genetico:
         return # Devolver el fitness máximo?
     
     def competir(self):
-        for i in range(self.n_generaciones):
+        n_generaciones = self.n_generaciones
+        bar_length = 40  # Length of the progress bar
+
+        for i in range(n_generaciones):
             self.generacion(self.genomas)
             self.reproduccion(self.mutaciones)
-            if i % 10 == 0:
-                print(f"generación {i} concluida.")
-                print(f"Poblaciones: {self.species_member_count}")
+            
+            if i % 20 == 0 or i == n_generaciones - 1:
+                # Update progress bar every 20 generations or at the last generation
+                progress = (i + 1) / n_generaciones
+                block = int(bar_length * progress)
+                text = f"\rGeneraciones: [{'#' * block + '-' * (bar_length - block)}] {progress * 100:.2f}%"
+                sys.stdout.write(text)
+                sys.stdout.flush()
+            
+            # if i % 500 == 0 and i != 0:
+                # print(f"\nGeneración {i} concluida.")
+                # print(f"Poblaciones: {self.species_member_count}")
         
-        return 
+        # Make sure the progress bar goes to 100% at the end
+        sys.stdout.write("\rGeneraciones: [########################################] 100.00%\n")
+        sys.stdout.flush()
+        
+        return
     
     
     

@@ -4,6 +4,7 @@ from ultimatum import Ultimatum
 import numpy as np
 import random
 import math
+import sys
 
 def apply_neural_network_propose(agente, vecino, genome):
     input = []
@@ -147,10 +148,13 @@ class Genetico_counter:
             agentes_totales += value[2]
         
         agentes_extra = self.n_agentes_ecologico - agentes_totales
-        
+        print(f"Agentes ecologico: {self.n_agentes_ecologico}")
+        print(f"Target: {self.target}")
+        print(f"Totales: {agentes_totales}")
+        print(f"Extra: {agentes_extra}")        
 
         for genoma in genomas:
-            estrategias = self.target
+            estrategias = self.target.copy()
             estrategias["genetica"] = (strategy_propose(genoma[0]), strategy_accept(genoma[1]), agentes_extra)
 
             ecologico = Ecologico(self.n_turnos_por_generacion, self.n_generaciones_ecologico, estrategias, self.n_agentes_ecologico, self.topologia, ["genetica"])
@@ -159,7 +163,7 @@ class Genetico_counter:
             trayectoria_fitness = ecologico.fitness_estrategias_por_generacion['genetica']
             
             fitness_promedio = np.mean(trayectoria_fitness)
-            self.fitness_genomas.append(fitness_promedio*math.log(len(trayectoria_fitness)))
+            self.fitness_genomas.append(fitness_promedio) # math.log(len(trayectoria_fitness)))
             # print(f"Salió un genoma con fitness {fitness_promedio}")
         
         if self.mutaciones['speciation']:
@@ -306,25 +310,39 @@ class Genetico_counter:
         self.fitness_genomas = []
    
         return # Devolver el fitness máximo?
-    
+
     def competir(self):
         mod = 10
         if self.bool_ecosystem:
             mod = 1
 
-        for i in range(self.n_generaciones):
+        n_generaciones = self.n_generaciones
+        bar_length = 40  # Length of the progress bar
+
+        for i in range(n_generaciones):
             if self.bool_ecosystem:
-               self.generacion_ecosystem(self.genomas) 
-            else: 
+                self.generacion_ecosystem(self.genomas)
+            else:
                 self.generacion_single_strategy(self.genomas)
             self.reproduccion(self.mutaciones)
 
-            if i % mod == 0:
-                print(f"generación {i} concluida.")
-                print(f"Mejor fitness: {self.mejor_fitness}")
-                print(f"Poblaciones: {self.species_member_count}")
+            if i % 20 == 0 or i == n_generaciones - 1:
+                # Update progress bar every 20 generations or at the last generation
+                progress = (i + 1) / n_generaciones
+                block = int(bar_length * progress)
+                text = f"\rGeneraciones: [{'#' * block + '-' * (bar_length - block)}] {progress * 100:.2f}%"
+                sys.stdout.write(text)
+                sys.stdout.flush()
+
+            if i % 40 == 0 or i == n_generaciones - 1:
+                # Print fitness every 40 generations or at the last generation
+                print(f"\nMejor fitness: {self.mejor_fitness}")
         
-        return 
+        # Make sure the progress bar goes to 100% at the end
+        sys.stdout.write("\rGeneraciones: [########################################] 100.00%\n")
+        sys.stdout.flush()
+        
+        return
     
     
     

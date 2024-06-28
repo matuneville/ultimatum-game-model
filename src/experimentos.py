@@ -216,6 +216,8 @@ class Experimentos:
             puntos_ganados.append(puntos_totales)
 
         plt.figure(figsize=(10, 6))
+        #plt.hist(puntos_ganados)
+        #plt.plot()
         plt.scatter(agentes_iniciales, puntos_ganados, marker='o', color='white',
                     edgecolor='blue', alpha=0.8,label='Puntos por estrategia 2')
 

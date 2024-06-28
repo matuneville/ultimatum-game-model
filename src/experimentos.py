@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import statistics
+from sklearn.metrics import r2_score
 
 class Experimentos:
     def __init__(self, turnos, n_generaciones, n_agentes):
@@ -23,24 +24,35 @@ class Experimentos:
         return resultados_win
 
     def graficar_proporcion_ganadores(self, cantidad_simulaciones, topologia, estrategias): 
-        # n_turnos_por_generacion, n_generaciones, estrategias, n_agentes, topologia
-
-        simulaciones = cantidad_simulaciones
+        # Simulaciones
         result_wins_denso = self.contar_ganador_n_veces(cantidad_simulaciones, topologia, estrategias)
 
-        # Create a single pie chart
+        # Calcular los porcentajes
+        total_simulaciones = sum(result_wins_denso.values())
+        porcentajes = [value / total_simulaciones * 100 for value in result_wins_denso.values()]
+
+        # Crear un gráfico de pastel
         fig, ax = plt.subplots(figsize=(4, 4))
 
-        ax.pie(x=list(result_wins_denso.values()), explode=[0.025]*len(estrategias),
-            labels=[label if value > 0 else '' for label, value in result_wins_denso.items()],
-            shadow=True)
-        ax.text(-1.2, -2, f"Cantidad de simulaciones: {simulaciones},\n"
-                        f"con {self.n_generaciones} generaciones de {self.n_agentes} agentes,\n"
-                        f"con {len(topologia)} aristas entre agentes,\n"
-                        f"{self.n_turnos_por_generacion} turnos por generacion")
-        ax.set_title('Proporción de Ganadores')
+        wedges, texts = ax.pie(
+            x=list(result_wins_denso.values()), 
+            explode=[0.025] * len(estrategias),
+            shadow=True, 
+            labels=None
+        )
 
+        # Agregar leyenda
+        ax.legend(
+            wedges, 
+            [f"{label} ({porcentaje:.1f}%)" for label, porcentaje in zip(result_wins_denso.keys(), porcentajes)],
+            title="Estrategias", 
+            loc="center left", 
+            bbox_to_anchor=(1, 0, 0.5, 1)
+        )
+
+        ax.set_title(f'Proporción de Ganadores en {cantidad_simulaciones} simulaciones', loc='center')
         plt.show()
+
 
     # Evalúa para qué cantidad de agentes cambia la proporción en estrategias ganadoras
     # Las estrategias son tuplas de proponer y aceptar
@@ -179,42 +191,56 @@ class Experimentos:
             df_medias = pd.DataFrame({"Media_puntos": entorno.media_total_de_puntos_por_generacion})
             ax2.plot(df_medias.index, df_medias['Media_puntos'], marker='', color='r')
             ax2.set_ylabel('Media de puntos')
+            ax2.set_xlabel('Generación')
             ax2.legend(['Media de puntos'])
             ax2.grid(True)
+            ax2.set_title('Media de puntaje poblacional')
+                
 
         plt.tight_layout()
         plt.show()
 
 
-    def graficar_puntos_ganados_array_estrategias(self, array_estrategias, topologia):
+    def graficar_puntos_ganados_array_estrategias(self, array_estrategias, topologia, añadir_fitted=False):
         # Para mostrar que igual es un óptimo global que haya 100 estrategias ratas
         puntos_ganados = []
         agentes_iniciales = []
 
-        for i in range(len(array_estrategias)):
-            entorno = Ecologico(self.n_turnos_por_generacion, 1, array_estrategias[i], self.n_agentes, topologia)
+        for i, estrategia in enumerate(array_estrategias):
+            entorno = Ecologico(self.n_turnos_por_generacion, 1, estrategia, self.n_agentes, topologia)
             entorno.competir()
             agentes = entorno.ultimatum.agentes
-            # print(agentes[0])
-            # print(agentes[0].dinero_ganado)
-            puntos_totales = 0
-            for j in range(len(agentes)):
-                puntos_totales += agentes[j].dinero_ganado
+            puntos_totales = sum(agente.dinero_ganado for agente in agentes)
             
             agentes_iniciales.append(i)
             puntos_ganados.append(puntos_totales)
 
         plt.figure(figsize=(10, 6))
-        plt.plot(agentes_iniciales, puntos_ganados, marker='o', linestyle='-', color='b')
+        plt.scatter(agentes_iniciales, puntos_ganados, marker='o', color='white',
+                    edgecolor='blue', alpha=0.8,label='Puntos por estrategia 2')
+
+        if añadir_fitted:
+            # hacemos regresion polinomica, no pude con scikit learn, le pedi a gpt
+            z = np.polyfit(agentes_iniciales, puntos_ganados, 2)
+            p = np.poly1d(z)
+            plt.plot(agentes_iniciales, p(agentes_iniciales), linestyle='--', color='C1', label='Ajuste polinómico')
+
+            # agrego r squared y rmse
+            y_pred = p(agentes_iniciales)
+            r2 = r2_score(puntos_ganados, y_pred)
+            rmse = np.sqrt(np.mean((puntos_ganados - y_pred)**2)) # raiz de la media de los cuadrados de los errores
+            
+            plt.text(0.1, 0.85, f'R² = {r2:.4f}\nRMSE = {rmse:.4f}', transform=plt.gca().transAxes, fontsize=12)
 
         plt.title('Puntos ganados con más y menos agentes')
         plt.xlabel('Agentes con la estrategia 2')
         plt.ylabel('Puntos ganados en el ecosistema')
+        plt.legend()
         plt.grid(True)
         plt.show()
 
 
-    def puntos_segun_presencia_de_dos_estrategias(self, estrategia_1, estrategia_2, topologia):
+    def puntos_segun_presencia_de_dos_estrategias(self, estrategia_1, estrategia_2, topologia, añadir_fitted=False):
         array_estrategias = []
         for i in range(self.n_agentes + 1):
             estrategias = {
@@ -223,4 +249,4 @@ class Experimentos:
             }
             array_estrategias.append(estrategias)
 
-        self.graficar_puntos_ganados_array_estrategias(array_estrategias, topologia)
+        self.graficar_puntos_ganados_array_estrategias(array_estrategias, topologia, añadir_fitted)

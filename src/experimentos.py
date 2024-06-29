@@ -1,6 +1,7 @@
 from ecologico import Ecologico
 import pandas as pd
 import numpy as np
+from scipy import stats
 import matplotlib.pyplot as plt
 import statistics
 from sklearn.metrics import r2_score
@@ -77,7 +78,7 @@ class Experimentos:
             # print(f"Calculado para {i} agentes.")
             i += granularidad
 
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(10, 5))
         plt.plot(cantidades_iniciales_e1, proporciones_ganadoras_e1, marker='o', linestyle='-', color='b')
 
         plt.title('Proporción de Ganadores de Estrategia 1 vs Cantidades Iniciales de Estrategia 1')
@@ -201,7 +202,7 @@ class Experimentos:
         plt.show()
 
 
-    def graficar_puntos_ganados_array_estrategias(self, array_estrategias, topologia, añadir_fitted=False):
+    def graficar_puntos_ganados_array_estrategias(self, array_estrategias, topologia, añadir_fitted=False, incluir_histograma=False):
         # Para mostrar que igual es un óptimo global que haya 100 estrategias ratas
         puntos_ganados = []
         agentes_iniciales = []
@@ -215,34 +216,44 @@ class Experimentos:
             agentes_iniciales.append(i)
             puntos_ganados.append(puntos_totales)
 
-        plt.figure(figsize=(10, 6))
-        #plt.hist(puntos_ganados)
-        #plt.plot()
-        plt.scatter(agentes_iniciales, puntos_ganados, marker='o', color='white',
-                    edgecolor='blue', alpha=0.8,label='Puntos por estrategia 2')
+        fig, axs = plt.subplots(1, 2, figsize=(14, 5))
+
+        # Histograma
+        if incluir_histograma:
+            axs[1].hist(puntos_ganados, bins=20, alpha=0.7, color='c')
+            axs[1].set_xlabel('Puntos ganados')
+            axs[1].set_ylabel('Frecuencia')
+            axs[1].set_title('Distribución de puntos ganados')
+
+        # Scatter plot
+        axs[0].scatter(agentes_iniciales, puntos_ganados, marker='o', color='white',
+                    edgecolor='blue', alpha=0.8, label='Puntos por estrategia 2')
+        axs[0].set_xlabel('Agentes con la estrategia 2')
+        axs[0].set_ylabel('Puntos ganados en el ecosistema')
+        axs[0].set_title('Puntos ganados con más y menos agentes')
 
         if añadir_fitted:
-            # hacemos regresion polinomica, no pude con scikit learn, le pedi a gpt
+            # hacemos regresion polinomica
             z = np.polyfit(agentes_iniciales, puntos_ganados, 2)
             p = np.poly1d(z)
-            plt.plot(agentes_iniciales, p(agentes_iniciales), linestyle='--', color='C1', label='Ajuste polinómico')
+            axs[0].plot(agentes_iniciales, p(agentes_iniciales), linestyle='--', color='C1', label='Ajuste polinómico')
 
             # agrego r squared y rmse
             y_pred = p(agentes_iniciales)
             r2 = r2_score(puntos_ganados, y_pred)
-            rmse = np.sqrt(np.mean((puntos_ganados - y_pred)**2)) # raiz de la media de los cuadrados de los errores
+            rmse = np.sqrt(np.mean((puntos_ganados - y_pred)**2))  # raiz de la media de los cuadrados de los errores
             
-            plt.text(0.1, 0.85, f'R² = {r2:.4f}\nRMSE = {rmse:.4f}', transform=plt.gca().transAxes, fontsize=12)
+            axs[0].text(0.1, 0.85, f'R² = {r2:.4f}\nRMSE = {rmse:.4f}', transform=axs[0].transAxes, fontsize=12)
 
-        plt.title('Puntos ganados con más y menos agentes')
-        plt.xlabel('Agentes con la estrategia 2')
-        plt.ylabel('Puntos ganados en el ecosistema')
-        plt.legend()
-        plt.grid(True)
+        axs[0].legend()
+        axs[0].grid(True)
+
+        plt.tight_layout()
         plt.show()
+        return puntos_ganados
 
 
-    def puntos_segun_presencia_de_dos_estrategias(self, estrategia_1, estrategia_2, topologia, añadir_fitted=False):
+    def puntos_segun_presencia_de_dos_estrategias(self, estrategia_1, estrategia_2, topologia, añadir_fitted=False, incluir_histograma=False):
         array_estrategias = []
         for i in range(self.n_agentes + 1):
             estrategias = {
@@ -251,4 +262,69 @@ class Experimentos:
             }
             array_estrategias.append(estrategias)
 
-        self.graficar_puntos_ganados_array_estrategias(array_estrategias, topologia, añadir_fitted)
+        return self.graficar_puntos_ganados_array_estrategias(array_estrategias, topologia, añadir_fitted, incluir_histograma)
+    
+    def graficar_qqplot_potencia(self, puntos):
+        fig, ax = plt.subplots(figsize=(7,5))
+        stats.probplot(dist='powerlaw', sparams=(0.5,), plot=ax, x=puntos)
+        ax.set_xlabel('Quantiles teóricos')
+        ax.set_ylabel('Quantiles observados')
+        ax.set_title('QQ-plot de ley de potencia, con a=0.5')
+        plt.tight_layout()
+
+
+
+    # A partir de aca hay puro codigo repetido, mala práctica pero es para evitar romper algunas funciones que se usan mucho y que ya estan bien
+
+    def graficar_evolucion_y_ganadores(self, estrategias, topologia, cantidad_simulaciones, titulo):
+        entorno = Ecologico(self.n_turnos_por_generacion, self.n_generaciones, estrategias, self.n_agentes, topologia)
+        historial_estrategias, vecinos_fitness = entorno.competir()
+        data = [{key: value[2] for key, value in dic.items()} for dic in historial_estrategias]
+        df = pd.DataFrame(data)
+
+        result_wins_denso = self.contar_ganador_n_veces(cantidad_simulaciones, topologia, estrategias)
+        total_simulaciones = sum(result_wins_denso.values())
+        porcentajes = [value / total_simulaciones * 100 for value in result_wins_denso.values()]
+
+        fig, ax = plt.subplots(1, 2, figsize=(16, 6), gridspec_kw={'width_ratios': [3, 1], 'wspace':0.2})
+        ax_evolucion = ax[0]
+        ax_pie = ax[1]
+
+        end = None
+        for estrategia in df.columns:
+            ax_evolucion.plot(df.index, df[estrategia], marker='', label=estrategia)
+            if end is None:
+                idx_n = df[estrategia][df[estrategia] == entorno.n_agentes].index
+                if not idx_n.empty:
+                    end = idx_n[0]
+                    
+        if end is None:
+            end = entorno.n_generaciones
+
+        ax_evolucion.set_xlim([0, end + 1])
+        ax_evolucion.set_xlabel('Generación')
+        ax_evolucion.set_ylabel('Agentes por estrategia')
+        ax_evolucion.set_title('Evolución de Ultimatum ecológico')
+        ax_evolucion.legend()
+        ax_evolucion.grid(True)
+
+        wedges, texts = ax_pie.pie(
+            x=list(result_wins_denso.values()),
+            explode=[0.025] * len(estrategias),
+            shadow=True,
+            labels=None
+        )
+        ax_pie.legend(
+            wedges,
+            [f"{label} ({porcentaje:.1f}%)" for label, porcentaje in zip(result_wins_denso.keys(), porcentajes)],
+            title="Estrategias",
+            loc="center left",
+            bbox_to_anchor=(1, 0, 0.5, 1)
+        )
+        ax_pie.set_title(f'Proporción de Ganadores en {cantidad_simulaciones} simulaciones', loc='center')
+
+        plt.subplots_adjust(wspace=0.2)  # Ajusta el espacio entre subplots
+        fig.suptitle(titulo, fontsize=20)
+        plt.show()
+
+

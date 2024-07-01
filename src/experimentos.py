@@ -4,7 +4,7 @@ import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
 import statistics
-from sklearn.metrics import r2_score
+# from sklearn.metrics import r2_score
 
 class Experimentos:
     def __init__(self, turnos, n_generaciones, n_agentes):
@@ -203,7 +203,7 @@ class Experimentos:
 
 
     def graficar_puntos_ganados_array_estrategias(self, array_estrategias, topologia, añadir_fitted=False, incluir_histograma=False):
-        # Para mostrar que igual es un óptimo global que haya 100 estrategias ratas
+    # Para mostrar que igual es un óptimo global que haya 100 estrategias ratas
         puntos_ganados = []
         agentes_iniciales = []
 
@@ -216,14 +216,16 @@ class Experimentos:
             agentes_iniciales.append(i)
             puntos_ganados.append(puntos_totales)
 
-        fig, axs = plt.subplots(1, 2, figsize=(14, 5))
-
-        # Histograma
         if incluir_histograma:
+            fig, axs = plt.subplots(1, 2, figsize=(14, 5))
+            # Histograma
             axs[1].hist(puntos_ganados, bins=20, alpha=0.7, color='c')
             axs[1].set_xlabel('Puntos ganados')
             axs[1].set_ylabel('Frecuencia')
             axs[1].set_title('Distribución de puntos ganados')
+        else:
+            fig, ax = plt.subplots(1, 1, figsize=(7, 5))
+            axs = [ax]
 
         # Scatter plot
         axs[0].scatter(agentes_iniciales, puntos_ganados, marker='o', color='white',
@@ -251,6 +253,7 @@ class Experimentos:
         plt.tight_layout()
         plt.show()
         return puntos_ganados
+
 
 
     def puntos_segun_presencia_de_dos_estrategias(self, estrategia_1, estrategia_2, topologia, añadir_fitted=False, incluir_histograma=False):
